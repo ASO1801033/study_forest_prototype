@@ -1,0 +1,14 @@
+<ons-page id="setting">
+  <ons-toolbar>
+    <div class="left"><ons-back-button>Back</ons-back-button></div>
+    <div class="center">設定</div>
+  </ons-toolbar>
+
+  <div class="content" style="text-align: center">
+    <p>設定画面</p>
+    <ons-button onclick="document.querySelector('#navigator').pushPage('subject_add.html')">科目登録へ</ons-button>
+    <ons-button onclick="document.querySelector('#navigator').pushPage('subject_list.html')">科目一覧へ</ons-button>
+    <ons-button onclick="document.querySelector('#navigator').pushPage('user_update.html')">ユーザー更新へ</ons-button>
+    <ons-button onclick="document.querySelector('#navigator').pushPage('pass_update.html')">パスワード変更へ</ons-button>
+  </div>
+</ons-page>

@@ -1,0 +1,235 @@
+<ons-page id="home">
+  <ons-toolbar>
+    <div class="center">ホーム</div>
+    <div class="right">
+      <ons-toolbar-button>
+        <ons-icon icon="md-plus" size="30px" id="open"></ons-icon>
+      </ons-toolbar-button>
+    </div>
+  </ons-toolbar>
+
+  <div class="content" style="text-align: center">
+    <p>ホーム画面</p>
+    <ons-button onclick="document.querySelector('#navigator').pushPage('setting.html')">設定へ</ons-button>
+    <ons-button onclick="document.querySelector('#navigator').pushPage('leaf_detail.html')">はっぱ詳細へ</ons-button>
+    <ons-button onclick="document.querySelector('#navigator').pushPage('calendar.html')">カレンダーへ</ons-button>
+
+    <ons-list>
+      <ons-list-header>はっぱ一覧</ons-list-header>
+      <span id="threads"></span>
+    </ons-list>
+  </div>
+  
+  <ons-dialog direction="up" id="input-leaf">
+    <div style="text-align: center;">
+      <p>
+        <ons-input id="title" modifier="underbar" placeholder="はっぱのタイトル" float></ons-input>
+      </p>
+      <p>
+        <textarea class="textarea" id="body" cols="20" rows="3" placeholder="はっぱの詳細"></textarea>
+      </p>
+      <p>
+        <ons-select id="subject" modifier="material">
+          <option value="init">科目を選択してください</option>
+          <option value="国語">国語</option>
+          <option value="算数">算数</option>
+          <option value="英語">英語</option>
+          <option value="理科">理科</option>
+          <option value="社会">社会</option>
+        </ons-select>
+      </p>
+      <!--
+      <p>
+        <input type="file" id="image" accept="image/*" />
+      </p>
+      -->
+      <p style="margin-top: 30px;">
+        <ons-button id="add">OK</ons-button>
+        <ons-button onclick="hideDialog('input-leaf')">キャンセル</ons-button>
+      </p>
+    </div>
+  </ons-dialog>
+  
+  <script>
+    function hideDialog(id){
+      document.getElementById('title').value = '';
+      document.getElementById('body').value = '';
+      document.getElementById('subject').value = 'init';
+      document.getElementById(id).hide();
+    }
+
+    // 画面初期化時の処理
+    ons.getScriptPage().onInit = function() {
+      // プラスボタンを押した時の処理
+      document.querySelector('#open').onclick = openDialog.bind(this);
+      // スレッド追加ボタンを押した時の処理
+      document.querySelector('#add').onclick = addThread.bind(this);
+    }
+    
+    // 画面表示時の処理
+    ons.getScriptPage().onShow = function() {
+      // スレッド一覧を読み込む
+      showThread.bind(this)();
+    }
+
+    // スレッド追加用ダイアログの表示
+    function openDialog() {
+      this.querySelector('ons-dialog').show();
+    }
+
+    // スレッドを追加する処理
+    async function addThread() {
+      // スレッドクラスを作成
+      const Thread = ncmb.DataStore('Leaf');
+      const thread = new Thread;
+
+      // 登録前に空白チェック
+      // titleチェック前（空値入力防止のため一旦空白削除）
+      var chk_title = this.querySelector('#title').value.replace(/\s+/g, "");
+      var res_title = title_chk(chk_title); // titleチェック後
+
+      // bodyチェック前（空値入力防止のため一旦空白削除）
+      var chk_body = this.querySelector('#body').value.replace(/\s+/g, "");
+      var res_body = body_chk(chk_body); // bodyチェック後
+
+      var chk_subject = this.querySelector('#subject').value; // subjectチェック前
+      var res_subject = subject_chk(chk_subject); // subjectチェック後
+
+      function title_chk(chk_title){ // titleチェック関数
+        if(chk_title != '' && chk_title != ' ' && chk_title != '　'){
+          //alert('title:ok');
+          return 'ok';
+        }else{
+          //alert('title:ng');
+          return 'ng';
+        }
+      }
+
+      function body_chk(chk_body){ // bodyチェック関数
+        if(chk_body != '' && chk_body != ' ' && chk_body != '　'){
+          //alert('body:ok');
+          return 'ok';
+        }else{
+          //alert('body:ng');
+          return 'ng';
+        }
+      }
+
+      function subject_chk(chk_subject){ // subjectチェック関数
+        if(chk_subject != 'init'){
+          //alert('subject:ok');
+          return 'ok';
+        }else{
+          //alert('subject:ng');
+          return 'ng';
+        }
+      }
+
+      if(res_title == 'ok' && res_body == 'ok' && res_subject == 'ok'){
+        //alert("登録可能");
+        //ニフクラ管理画面では日本時間で表示されているが、サーバの登録時間は標準時間→JSTにしたい
+        thread.set('title', document.getElementById('title').value)
+        .set('body', document.getElementById('body').value)
+        .set('subject', document.getElementById('subject').value)
+        .save();
+        ons.notification.toast('登録しました！', {timeout: 2000, modifier: 'success',});
+        document.getElementById('title').value = '';
+        document.getElementById('body').value = '';
+        document.getElementById('subject').value = 'init';
+        // ダイアログを閉じる
+        this.querySelector('ons-dialog').hide();
+        // ホーム画面へ移動
+        document.querySelector('#navigator').pushPage('home.html');
+      }else{
+        //alert("登録不可");
+        ons.notification.toast('入力値にエラーがあります！', {timeout: 2000, modifier: 'danger',});
+      }
+    }
+
+    // スレッド一覧をNCMBから取得する処理
+    async function getThread() {
+      //alert("getThread開始")
+      const Thread = ncmb.DataStore('Leaf');
+      return await Thread
+        .order('createDate', true)
+        //.limit(100)
+        .fetchAll();
+    }
+
+    // スレッドを表示する処理
+    async function showThread() {
+      // スレッド表示対象のDOM
+      const dom = this.querySelector('#threads');
+      // スレッド一覧の読み込み
+      this.threads = await getThread();
+      const html = [];
+      this.threads.forEach(thread => {
+        // 一覧用のDOMを準備
+        //alert(thread.get('title'))
+        html.push(`
+          <ons-list-item modifier="chevron" tappable data-object-id="${thread.objectId}">
+            <div class="center">
+              <span class="list-item__title">
+                ${thread.get('title')} ${deletable(thread)}
+              </span>
+              <span class="list-item__subtitle">
+                ${thread.get('body')}
+              </span>
+            </div>
+          </ons-list-item>
+        `);
+      });
+      // DOMを追加
+      dom.innerHTML = html.join('');
+      addEvent.bind(this)();
+    }
+
+    // コメントのイベント設定
+    function addEvent() {
+      // コメントの画像に対するイベント
+      this.querySelectorAll('ons-list-item').forEach(d => {
+        d.onclick = () => {
+          document.querySelector('#navigator').pushPage('leaf_detail.html', { data: {
+            thread: this.threads.filter(t => t.objectId === d.dataset.objectId)[0]
+          }});
+        }
+      });
+      this.querySelectorAll('ons-list-item img').forEach(d => {
+        loadImage.bind(this)(d.dataset.name, `#${d.getAttribute('id')}`);
+      });
+      // 削除アイコンをクリックした際のイベント
+      this.querySelectorAll('.delete').forEach(d => {
+        d.onclick = () => {
+          deleteThread.bind(this)(d);
+        }
+      });
+
+      // スレッドを削除する処理
+      async function deleteThread(dom) {
+        // 削除前の確認
+        const res = await ons.notification.confirm('スレッドは一度削除すると元には戻せません。削除してよろしいですか？');
+        if (res === 0) return; // キャンセルの場合
+        // 削除対象のデータを設定
+        const Thread = ncmb.DataStore('Thread');
+        const thread = new Thread;
+        thread.objectId = dom.dataset.objectId;
+        // 削除実行
+        await thread.delete();
+        // 表示を更新
+        showThread.bind(this)();
+      }
+    }
+  </script>
+
+  <style>
+    #title, .textarea, ons-select {
+      width: 80%;
+    }
+    .toast--success{
+      background-color: green;
+    }
+    .toast--danger{
+      background-color: red;
+    }
+  </style>
+</ons-page>

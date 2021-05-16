@@ -1,0 +1,94 @@
+<ons-page id="leaf_detail">
+   <ons-toolbar>
+    <div class="left"><ons-back-button>Back</ons-back-button></div>
+    <div class="center">はっぱ詳細</div>
+  </ons-toolbar>
+
+  <div class="content" style="text-align: center">
+    <p>はっぱ詳細画面</p>
+    <ons-button onclick="document.querySelector('#navigator').pushPage('leaf_update.html')">はっぱ更新へ</ons-button>
+    <ons-button onclick="document.querySelector('#navigator').pushPage('leaf_delete.html')">はっぱ削除へ</ons-button>
+
+    <ons-button onclick="createAlertDialog()">はっぱを削除する</ons-button>
+
+    <ons-card>
+      <!--<img class="caption" src="http://placehold.jp/100x100.png"/>-->
+      title：<p class="thread-title"></p>
+      body：<p class="thread-body"></p>
+      subject：<p class="thread-subject"></p>
+    </ons-card>
+  </div>
+
+  <template id="alert-dialog.html">
+    <ons-alert-dialog id="my-alert-dialog" modifier="rowfooter">
+      <div class="alert-dialog-title">確認</div>
+      <div class="alert-dialog-content">
+        本当に削除しますか？
+      </div>
+      <div class="alert-dialog-footer">
+        <ons-alert-dialog-button onclick="delete_cancel()">キャンセル</ons-alert-dialog-button>
+        <ons-alert-dialog-button onclick="delete_leaf()">削除する</ons-alert-dialog-button>
+      </div>
+    </ons-alert-dialog>
+  </template>
+  
+  <script>
+    // スレッド画面表示時の処理
+    ons.getScriptPage().onShow = function() {
+      // スレッドの内容を画面に表示
+      const { thread } = this.data;
+      for (const key in thread) {
+        const value = thread[key];
+        var dom = this.querySelector(`.thread-${key}`);
+        if (dom) {
+          dom.innerHTML = value;
+        }
+      }
+      // 画像があれば表示
+      if (thread.get('image')) {
+        loadImage.bind(this)(thread.get('image'), `.caption`)
+      }
+    }
+
+    // 削除の確認ダイアログ
+    var createAlertDialog = function() {
+      var dialog = document.getElementById('my-alert-dialog');
+      if (dialog) {
+        dialog.show();
+      } else {
+        ons.createElement('alert-dialog.html', { append: true })
+          .then(function(dialog) {
+            dialog.show();
+        });
+      }
+    };
+
+    // 削除確認ダイアログ：「キャンセル」を押下
+    var delete_cancel = function() {
+      //alert("cancel")
+      document
+        .getElementById('my-alert-dialog')
+        .hide();
+    };
+
+    // 削除確認ダイアログ：「削除する」を押下
+    var delete_leaf = function() {
+      alert("削除処理")
+      document
+        .getElementById('my-alert-dialog')
+        .hide();
+      // ホーム画面へ移動
+      document.querySelector('#navigator').pushPage('home.html');
+    };
+  </script>
+  
+  <style>
+    .caption {
+      width: 100%;
+      object-fit: cover;
+    }
+    .square-image {
+      object-fit: cover;
+    }
+  </style>
+</ons-page>
